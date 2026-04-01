@@ -42,10 +42,10 @@ export default function LuckyWheelPage() {
   const [hubTapCount, setHubTapCount] = useState(0);
   const [soundReady, setSoundReady] = useState(false);
 
-  const [playTick] = useSound("/sounds/tick.wav", { volume: 0.25, interrupt: true });
+  const [playTick, { stop: stopTick }] = useSound("/sounds/tick.wav", { volume: 0.25, interrupt: true });
   const [playWin] = useSound("/sounds/win.wav", { volume: 0.8 });
   const [playLose] = useSound("/sounds/lose.wav", { volume: 0.5 });
-  const [playSpin] = useSound("/sounds/spin.wav", { volume: 0.4 });
+  const [playSpin, { stop: stopSpin }] = useSound("/sounds/spin.wav", { volume: 0.4 });
 
   const lastTickRef = useRef<number>(-1);
 
@@ -92,6 +92,13 @@ export default function LuckyWheelPage() {
     } catch {}
   };
 
+  const safeStop = (fn?: () => void) => {
+    if (!settings.soundEnabled || !soundReady) return;
+    try {
+      fn?.();
+    } catch {}
+  };
+
   const runSpin = () => {
     if (!canSpin || !segments.length) return;
     const target = selectTargetSegment({ mode, nextOutcome, segments });
@@ -122,6 +129,9 @@ export default function LuckyWheelPage() {
 
       if (p < 1) requestAnimationFrame(frame);
       else {
+        // Ensure long/looping SFX don't continue after spin has ended.
+        safeStop(stopSpin);
+        safeStop(stopTick);
         setSpinning(false);
         setSpun(true);
         setWheelLocked(true);
@@ -157,6 +167,8 @@ export default function LuckyWheelPage() {
   };
 
   const closeModal = () => {
+    safeStop(stopSpin);
+    safeStop(stopTick);
     setModalOpen(false);
     setResult(null);
     setClaimExpiresAt(null);
@@ -171,7 +183,19 @@ export default function LuckyWheelPage() {
     setLocked(false);
     setSpun(false);
     setResult(null);
+    safeStop(stopSpin);
+    safeStop(stopTick);
   };
+
+  useEffect(() => {
+    return () => {
+      if (!settings.soundEnabled || !soundReady) return;
+      try {
+        stopSpin?.();
+        stopTick?.();
+      } catch {}
+    };
+  }, [settings.soundEnabled, soundReady, stopSpin, stopTick]);
 
   return (
     <main className="relative min-h-screen overflow-hidden bg-[#f6f7f4] px-4 py-6 text-[#181818]">
