@@ -16,9 +16,7 @@ import {
   getNextOutcome,
   getSegments,
   getSettings,
-  isWheelLocked,
   setNextOutcome,
-  setWheelLocked,
   verifyPassword,
 } from "@/lib/luckywheel/storage";
 import type { WheelSegment } from "@/lib/luckywheel/types";
@@ -31,7 +29,6 @@ export default function LuckyWheelPage() {
   const [segments] = useState<WheelSegment[]>(() => (typeof window === "undefined" ? [] : getSegments()));
   const [mode] = useState(() => (typeof window === "undefined" ? "admin_pick" : getMode()));
   const [nextOutcome, setNextOutcomeState] = useState<string | null>(() => (typeof window === "undefined" ? null : getNextOutcome()));
-  const [locked, setLocked] = useState(() => (typeof window === "undefined" ? false : isWheelLocked()));
   const [settings] = useState(() => (typeof window === "undefined" ? { spinCooldownSeconds: 0, showAdminHint: false, confettiEnabled: true, soundEnabled: false } : getSettings()));
   const [rotation, setRotation] = useState(0);
   const [spinning, setSpinning] = useState(false);
@@ -83,7 +80,7 @@ export default function LuckyWheelPage() {
     };
   }, []);
 
-  const canSpin = useMemo(() => !spinning && !spun && !locked, [spinning, spun, locked]);
+  const canSpin = useMemo(() => !spinning && !spun, [spinning, spun]);
 
   const safePlay = (fn?: () => void) => {
     if (!settings.soundEnabled || !soundReady) return;
@@ -134,8 +131,6 @@ export default function LuckyWheelPage() {
         safeStop(stopTick);
         setSpinning(false);
         setSpun(true);
-        setWheelLocked(true);
-        setLocked(true);
         if (mode === "admin_pick") {
           setNextOutcome(null);
           setNextOutcomeState(null);
@@ -172,19 +167,7 @@ export default function LuckyWheelPage() {
     setModalOpen(false);
     setResult(null);
     setClaimExpiresAt(null);
-  };
-
-  const unlockForNext = async () => {
-    const input = window.prompt("Enter admin password to unlock");
-    if (!input) return;
-    const ok = await verifyPassword(input);
-    if (!ok) return;
-    setWheelLocked(false);
-    setLocked(false);
     setSpun(false);
-    setResult(null);
-    safeStop(stopSpin);
-    safeStop(stopTick);
   };
 
   useEffect(() => {
@@ -224,14 +207,6 @@ export default function LuckyWheelPage() {
         <div className="mb-6 flex flex-col items-center gap-4">
           <p className="text-xs text-[#555]">Spin 1 of 1 — Make it count!</p>
           <SpinButton disabled={!canSpin} spun={spun} spinning={spinning} onClick={runSpin} />
-          {!canSpin && (
-            <div className="text-center">
-              <p className="text-[11px] text-[#777]">Wheel is locked after one spin.</p>
-              <button onClick={unlockForNext} className="mt-2 rounded-full border border-[#cfd5be] bg-white px-4 py-1.5 text-xs font-semibold text-[#181818]">
-                Unlock for Next Person
-              </button>
-            </div>
-          )}
           <p className="text-[11px] text-[#888]">
             Sound {settings.soundEnabled ? (soundReady ? "enabled" : "enabled (files missing)") : "disabled"} in Admin Settings
           </p>
