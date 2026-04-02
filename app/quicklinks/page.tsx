@@ -40,7 +40,7 @@ export default function QuickLinksPage() {
           <h1 className="mt-3 text-5xl" style={{ fontFamily: "var(--font-display)" }}>
             Quick Links
           </h1>
-          <p className="mt-3 text-sm text-[#666]">One QR. All official Markend links.</p>
+          <p className="mt-3 text-sm text-[#666]">All official Markend links.</p>
         </div>
 
         <div className="mt-8 space-y-3 md:mt-10">
