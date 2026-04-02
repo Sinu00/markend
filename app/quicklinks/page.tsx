@@ -64,11 +64,11 @@ export default function QuickLinksPage() {
 
       <div className="mt-auto flex shrink-0 justify-center px-4 pb-4 pt-2 md:pb-8">
         <Image
-          src="/markendkittyimg/quicklinkskittystandingandwavehaihandnobg.png"
+          src="/markendkittyimg/quicklinkimage.png"
           alt="Markend mascot waving hello"
           width={480}
           height={720}
-          className="h-auto w-full max-h-[38vh] max-w-[min(88vw,300px)] object-contain object-bottom md:max-h-none md:max-w-[340px]"
+          className="h-auto w-full max-h-[45vh] max-w-[min(88vw,300px)] object-contain object-bottom md:max-h-none md:max-w-[340px]"
           priority
         />
       </div>
