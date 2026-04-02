@@ -12,25 +12,25 @@ const steps = [
   {
     icon: SearchCheck,
     num: "01",
-    title: "Discovery Call",
+    title: "discovery call",
     desc: "We learn your business, goals, audience, and local market in depth.",
   },
   {
     icon: Lightbulb,
     num: "02",
-    title: "Strategy Blueprint",
+    title: "strategy blueprint",
     desc: "A custom digital plan built specifically for your brand and city.",
   },
   {
     icon: Rocket,
     num: "03",
-    title: "Execute & Launch",
+    title: "execute and launch",
     desc: "We build, design, and publish across all your platforms.",
   },
   {
     icon: LineChart,
     num: "04",
-    title: "Measure & Scale",
+    title: "measure and scale",
     desc: "Real-time reporting. We double down on what works.",
   },
 ];
@@ -80,7 +80,7 @@ export default function Process() {
           className="mt-3 max-w-2xl text-[40px] leading-[1.05] md:text-[52px]"
           style={{ fontFamily: "var(--font-display)" }}
         >
-          From Idea to Impact —<br className="hidden md:block" /> Our 4-Step Process
+          from idea to impact —<br className="hidden md:block" /> our four-step process
         </h2>
 
         {/* Steps grid */}

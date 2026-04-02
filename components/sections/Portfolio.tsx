@@ -6,10 +6,10 @@ import { motion, AnimatePresence } from "framer-motion";
 const TABS = ["All", "Social Media", "Branding", "Websites", "Ads"];
 
 const cards = [
-  { title: "Spice Garden Restaurant", tag: "Social Media", h: "h-72" },
-  { title: "Bloom Boutique", tag: "Branding", h: "h-[420px]" },
-  { title: "Coastal Tours & Travels", tag: "Ads", h: "h-80" },
-  { title: "Bluefin Realty", tag: "Websites", h: "h-72" },
+  { title: "spice garden restaurant", tag: "social media", h: "h-72" },
+  { title: "bloom boutique", tag: "branding", h: "h-[420px]" },
+  { title: "coastal tours and travels", tag: "ads", h: "h-80" },
+  { title: "bluefin realty", tag: "websites", h: "h-72" },
 ];
 
 export default function Portfolio() {
@@ -29,7 +29,7 @@ export default function Portfolio() {
             className="text-[40px] leading-[1.05] md:text-[52px]"
             style={{ fontFamily: "var(--font-display)" }}
           >
-            Results We&apos;ve Built<br />for Kerala Brands.
+            results we&apos;ve built<br />for kerala brands.
           </h2>
 
           {/* Filter tabs */}

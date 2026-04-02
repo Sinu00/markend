@@ -30,7 +30,7 @@ export default function About() {
             className="mt-3 text-[40px] leading-[1.05] md:text-[48px]"
             style={{ fontFamily: "var(--font-display)" }}
           >
-            We Are Markend.<br />And We&apos;re From Here.
+            we are markend.<br />and we&apos;re from here.
           </h2>
           <p className="mt-6 text-[16px] leading-[1.85] text-[#666]">
             Born in Kasaragod, built for Kerala. Markend is a team of designers,

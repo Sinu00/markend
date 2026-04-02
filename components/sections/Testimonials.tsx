@@ -50,7 +50,7 @@ export default function Testimonials() {
           transition={{ duration: 0.5 }}
           className="text-[11px] font-semibold uppercase tracking-widest text-[#6ed807]"
         >
-          What Clients Say
+          what clients say
         </motion.p>
 
         <motion.h2
@@ -61,7 +61,7 @@ export default function Testimonials() {
           className="mt-3 text-[40px] leading-[1.05] text-white md:text-[52px]"
           style={{ fontFamily: "var(--font-display)" }}
         >
-          Kerala Businesses That<br className="hidden md:block" /> Trusted the Process.
+          kerala businesses that<br className="hidden md:block" /> trusted the process.
         </motion.h2>
 
         <motion.div

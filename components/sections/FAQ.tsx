@@ -41,7 +41,7 @@ export default function FAQ() {
           className="mt-3 text-[40px] leading-[1.05] md:text-[48px]"
           style={{ fontFamily: "var(--font-display)" }}
         >
-          Questions We Get<br className="hidden md:block" /> All the Time.
+          questions we get<br className="hidden md:block" /> all the time.
         </h2>
 
         <div className="mt-12">

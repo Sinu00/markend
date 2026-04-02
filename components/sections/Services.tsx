@@ -6,32 +6,32 @@ import { ArrowRight, Megaphone, Palette, Search, Camera, Target, Globe } from "l
 const items = [
   {
     icon: Megaphone,
-    title: "Social Media Marketing",
+    title: "social media marketing",
     desc: "Instagram, Facebook & YouTube strategies that build real audiences for Kerala brands.",
   },
   {
     icon: Palette,
-    title: "Brand Identity Design",
+    title: "brand identity design",
     desc: "Logos, color systems, and visual languages that make your brand unforgettable.",
   },
   {
     icon: Search,
-    title: "SEO & Local Search",
+    title: "seo and local search",
     desc: "Rank higher on Google when people in Kasaragod search for your service.",
   },
   {
     icon: Camera,
-    title: "Content Production",
+    title: "content production",
     desc: "Reels, photos, and stories crafted specifically for Kerala audiences.",
   },
   {
     icon: Target,
-    title: "Performance Ads",
+    title: "performance ads",
     desc: "Meta and Google ad campaigns that turn followers into paying customers.",
   },
   {
     icon: Globe,
-    title: "Website Development",
+    title: "website development",
     desc: "Fast, modern websites that convert visitors into inquiries and sales.",
   },
 ];
@@ -69,7 +69,7 @@ export default function Services() {
             className="text-[40px] leading-[1.05] md:text-[52px]"
             style={{ fontFamily: "var(--font-display)" }}
           >
-            Services Built for<br />Real Business Growth.
+            services built for<br />real business growth.
           </motion.h2>
           <motion.p
             initial={{ opacity: 0 }}

@@ -76,7 +76,7 @@ export default function Hero() {
           >
             <span className="block overflow-hidden">
               <span className="flex gap-[0.14em]">
-                {["We", "Grow"].map((w, i) => (
+                {["we", "grow"].map((w, i) => (
                   <motion.span key={w} custom={i} variants={word} initial="hidden" animate="show">
                     {w}
                   </motion.span>
@@ -85,7 +85,7 @@ export default function Hero() {
             </span>
             <span className="block overflow-hidden">
               <span className="flex items-end gap-[0.14em]">
-                {["Local", "Brands"].map((w, i) => (
+                {["local", "brands"].map((w, i) => (
                   <motion.span key={w} custom={i + 2} variants={word} initial="hidden" animate="show">
                     {w}
                   </motion.span>

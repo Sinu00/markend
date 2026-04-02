@@ -14,7 +14,7 @@ export default function Contact() {
         className="pointer-events-none absolute inset-x-0 top-1/2 -translate-y-1/2 select-none overflow-hidden text-center text-[22vw] leading-none text-white/[0.025]"
         style={{ fontFamily: "var(--font-display)" }}
       >
-        MARKEND
+        markend
       </p>
 
       <div className="relative z-10">
@@ -35,7 +35,7 @@ export default function Contact() {
           className="mx-auto mt-4 max-w-[720px] text-[48px] leading-[1.02] text-white md:text-[68px]"
           style={{ fontFamily: "var(--font-display)" }}
         >
-          Let&apos;s Build Something<br className="hidden md:block" /> Great Together.
+          let&apos;s build something<br className="hidden md:block" /> great together.
         </motion.h2>
 
         <motion.p
