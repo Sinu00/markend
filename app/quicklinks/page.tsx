@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
 import { AtSign, Globe, MessageCircle, Phone } from "lucide-react";
 
@@ -32,17 +33,17 @@ const links = [
 
 export default function QuickLinksPage() {
   return (
-    <main className="min-h-screen bg-[#f6f7f4] px-6 py-12 text-[#181818] md:px-10">
-      <div className="mx-auto max-w-xl text-center">
-        <p className="text-[11px] font-semibold uppercase tracking-widest text-[#6ed807]">Markend</p>
-        <h1 className="mt-3 text-5xl" style={{ fontFamily: "var(--font-display)" }}>
-          Quick Links
-        </h1>
-        <p className="mt-3 text-sm text-[#666]">
-          One QR. All official Markend links.
-        </p>
+    <main className="flex min-h-screen min-h-[100dvh] flex-col bg-[#f6f7f4] text-[#181818]">
+      <div className="mx-auto flex w-full max-w-xl flex-1 flex-col px-6 pt-10 pb-2 md:py-12">
+        <div className="text-center">
+          <p className="text-[11px] font-semibold uppercase tracking-widest text-[#6ed807]">Markend</p>
+          <h1 className="mt-3 text-5xl" style={{ fontFamily: "var(--font-display)" }}>
+            Quick Links
+          </h1>
+          <p className="mt-3 text-sm text-[#666]">One QR. All official Markend links.</p>
+        </div>
 
-        <div className="mt-10 space-y-3">
+        <div className="mt-8 space-y-3 md:mt-10">
           {links.map(({ label, href, icon: Icon }) => (
             <Link
               key={label}
@@ -59,6 +60,17 @@ export default function QuickLinksPage() {
             </Link>
           ))}
         </div>
+      </div>
+
+      <div className="mt-auto flex shrink-0 justify-center px-4 pb-4 pt-2 md:pb-8">
+        <Image
+          src="/markendkittyimg/quicklinkskittystandingandwavehaihandnobg.png"
+          alt="Markend mascot waving hello"
+          width={480}
+          height={720}
+          className="h-auto w-full max-h-[38vh] max-w-[min(88vw,300px)] object-contain object-bottom md:max-h-none md:max-w-[340px]"
+          priority
+        />
       </div>
     </main>
   );
