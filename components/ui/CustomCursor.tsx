@@ -46,9 +46,9 @@ export default function CustomCursor() {
       animate={{
         width: isHovering ? 40 : 8,
         height: isHovering ? 40 : 8,
-        borderWidth: isHovering ? 1.5 : 0,
+        borderWidth: isHovering ? 1.5 : 1.2,
         borderColor: "#6ed807",
-        backgroundColor: isHovering ? "rgba(110, 216, 7, 0.2)" : "#181818",
+        backgroundColor: isHovering ? "rgba(110, 216, 7, 0.2)" : "rgba(255, 255, 255, 0.3)",
       }}
       transition={{ type: "spring", stiffness: 320, damping: 24 }}
     />
