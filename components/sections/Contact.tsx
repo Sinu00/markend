@@ -45,8 +45,8 @@ export default function Contact() {
           transition={{ delay: 0.25 }}
           className="mx-auto mt-6 max-w-[440px] text-[17px] leading-[1.7] text-[#888]"
         >
-          Book a free 30-minute audit of your current digital presence. No
-          commitment, just clarity.
+          Book a free 30-minute digital marketing and website audit. No
+          commitment, just clear growth opportunities.
         </motion.p>
 
         <motion.a
@@ -57,7 +57,7 @@ export default function Contact() {
           transition={{ delay: 0.35 }}
           className="pulse-glow mt-10 inline-block rounded-full bg-[#6ed807] px-10 py-4 text-base font-bold text-[#181818] transition-transform duration-200 hover:scale-105"
         >
-          Book Your Free Audit →
+          Book Your Free SEO & Marketing Audit →
         </motion.a>
 
         <div className="mt-16 flex flex-wrap justify-center gap-8 text-[14px] text-[#666] md:gap-14">

@@ -33,21 +33,19 @@ export default function About() {
             we are markend.<br />and we&apos;re from here.
           </h2>
           <p className="mt-6 text-[16px] leading-[1.85] text-[#666]">
-            Born in Kasaragod, built for Kerala. Markend is a team of designers,
+            Born in Kasaragod, built for Kerala and beyond. Markend is a team of designers,
             strategists, and storytellers who understand the pulse of this market.
             We don&apos;t bring templates from somewhere else — we build strategies
             from the ground up, for your people, your city, your audience.
           </p>
           <p className="mt-4 text-[16px] leading-[1.85] text-[#666]">
-            Whether you&apos;re a local restaurant, a boutique, a real estate firm, or
-            a new startup — we have the tools and local insight to make your brand
-            the one people talk about.
+            Whether you&apos;re a local restaurant, a boutique, a real estate firm, a startup, or an international client — we combine local insight with global execution to make your brand the one people remember.
           </p>
           <a
             href="#contact"
             className="mt-8 inline-flex items-center gap-1 text-sm font-semibold text-[#181818] transition-colors duration-200 hover:text-[#6ed807]"
           >
-            Meet the Team →
+            Talk to Our Team →
           </a>
         </motion.div>
 

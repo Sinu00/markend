@@ -67,7 +67,7 @@ export default function Hero() {
             className="inline-flex items-center gap-2 rounded-full border border-[#6ed807]/35 bg-[#6ed807]/12 px-4 py-1.5 text-[11px] font-semibold uppercase tracking-widest text-[#181818]"
           >
             <span className="h-1.5 w-1.5 rounded-full bg-[#6ed807]" />
-            Kerala&apos;s Digital Growth Partner
+            Kerala&apos;s Digital Marketing Growth Partner
           </motion.p>
 
           <h1
@@ -104,16 +104,16 @@ export default function Hero() {
             animate="show"
             className="mt-7 max-w-[560px] text-[18px] leading-[1.7] text-[#777]"
           >
-            From Kasaragod to the whole of Kerala — Markend builds digital strategies that get local businesses noticed, followed, and chosen.
+                From Kasaragod to across Kerala and global markets — Markend is a digital marketing agency helping local businesses with social media, branding, poster design, SEO, and website growth.
           </motion.p>
 
           <motion.div custom={1} variants={fade} initial="hidden" animate="show" className="mt-10 flex flex-wrap gap-4">
             <a href="#contact" className="group flex items-center gap-2 rounded-full bg-[#181818] px-8 py-4 text-sm font-semibold text-white transition-all duration-200 hover:bg-[#6ed807] hover:text-[#181818]">
-              Start Your Journey
+              Start Your Marketing Journey
               <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
             </a>
             <a href="#work" className="rounded-full border border-[#181818] px-8 py-4 text-sm font-semibold text-[#181818] transition-colors duration-200 hover:bg-[#181818] hover:text-white">
-              See Our Work
+              See Marketing Results
             </a>
           </motion.div>
 

@@ -78,7 +78,7 @@ export default function Services() {
             transition={{ delay: 0.15 }}
             className="max-w-sm text-[15px] leading-7 text-[#777] md:text-right"
           >
-            Every service is designed around one goal — making your business unmissable online.
+            Every service is built to help local and international clients discover your business, trust your brand, and convert through search and social.
           </motion.p>
         </div>
 
@@ -110,7 +110,7 @@ export default function Services() {
                 href="#contact"
                 className="mt-7 inline-flex items-center gap-1.5 text-sm font-semibold text-[#181818] transition-colors duration-200 group-hover:text-[#6ed807]"
               >
-                Learn more
+                Get a Quote
                 <ArrowRight className="h-3.5 w-3.5 transition-transform duration-200 group-hover:translate-x-1" />
               </a>
             </motion.article>
