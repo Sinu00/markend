@@ -63,14 +63,21 @@ export default function QuickLinksPage() {
       </div>
 
       <div className="mt-auto flex shrink-0 justify-center px-4 pb-4 pt-2 md:pb-8">
-        <Image
-          src="/markendkittyimg/quicklinkimage.png"
-          alt="Markend mascot waving hello"
-          width={480}
-          height={720}
-          className="h-auto w-full max-h-[45vh] max-w-[min(88vw,300px)] object-contain object-bottom md:max-h-none md:max-w-[340px]"
-          priority
-        />
+        <div className="relative w-full max-w-[min(88vw,300px)] md:max-w-[340px]">
+          {/* Contact shadow — reads as standing on the page, not pasted on */}
+          <div
+            className="pointer-events-none absolute bottom-[0.25rem] left-1/2 z-0 h-5 w-[72%] max-w-[220px] -translate-x-1/2 rounded-[100%] bg-[#181818]/[0.16] blur-[16px] md:bottom-3 md:h-6 md:blur-[20px]"
+            aria-hidden
+          />
+          <Image
+            src="/markendkittyimg/quicklinkimage.png"
+            alt="Markend mascot waving hello"
+            width={480}
+            height={720}
+            className="relative z-10 mx-auto h-auto w-full max-h-[45vh] object-contain object-bottom [filter:drop-shadow(0_12px_28px_rgba(24,24,24,0.12))_drop-shadow(0_4px_10px_rgba(24,24,24,0.06))] md:max-h-none"
+            priority
+          />
+        </div>
       </div>
     </main>
   );
