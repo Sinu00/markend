@@ -67,11 +67,11 @@ export default function Contact() {
           </p>
           <p className="flex items-center gap-2">
             <Phone className="h-4 w-4 shrink-0 text-[#6ed807]" />
-            +91 XXXXX XXXXX
+            +91 80756 45392
           </p>
           <p className="flex items-center gap-2">
             <Mail className="h-4 w-4 shrink-0 text-[#6ed807]" />
-            hello@markend.in
+            info@markend.in
           </p>
         </div>
       </div>

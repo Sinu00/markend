@@ -63,8 +63,8 @@ export default function Footer() {
             Get in Touch
           </p>
           <div className="mt-5 flex flex-col gap-2.5 text-[13px] text-[#666]">
-            <p>hello@markend.in</p>
-            <p>+91 XXXXX XXXXX</p>
+            <p>info@markend.in</p>
+            <p>+91 80756 45392</p>
             <p>Kasaragod, Kerala, India</p>
           </div>
         </div>
@@ -72,7 +72,7 @@ export default function Footer() {
 
       {/* Bottom bar */}
       <div className="mx-auto mt-12 flex w-full max-w-7xl flex-col justify-between gap-2 border-t border-[#1e1e1e] pt-6 text-[12px] text-[#444] md:flex-row">
-        <p>© 2025 Markend. All Rights Reserved.</p>
+        <p>© 2026 Markend. All Rights Reserved.</p>
         <p>
           Made with <span className="text-[#6ed807]">❤</span> in Kerala
         </p>

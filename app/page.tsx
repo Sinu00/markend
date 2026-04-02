@@ -91,7 +91,7 @@ export default function Home() {
       <Footer />
 
       <a
-        href="https://wa.me/919999999999?text=Hi%20Markend!%20I%27d%20like%20to%20grow%20my%20business%20online."
+        href="https://wa.me/918075645392?text=Hi%20Markend!%20I%27d%20like%20to%20grow%20my%20business%20online."
         target="_blank"
         rel="noreferrer"
         className="fixed bottom-6 right-6 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-[#6ed807] text-[#181818] shadow-lg transition hover:scale-105"
