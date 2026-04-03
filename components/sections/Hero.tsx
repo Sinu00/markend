@@ -133,7 +133,8 @@ export default function Hero() {
           <div className="absolute inset-0 -z-10 m-auto h-56 w-56 rounded-full bg-[#6ed807]/20 blur-3xl" />
           <div className="relative w-[235px] overflow-hidden rounded-[44px] border-[6px] border-[#181818] bg-[#0d0d0d] shadow-[0_28px_70px_rgba(0,0,0,0.35)]">
             <div className="mx-auto mt-3 h-5 w-[82px] rounded-full bg-[#1f1f1f]" />
-            <div className="mx-2 mb-2 mt-1 overflow-hidden rounded-[32px] bg-[#111]">
+          <video src="/markendkittyimg/heroimagekitty.mp4" autoPlay muted loop className="w-full h-full object-cover" />
+            {/* <div className="mx-2 mb-2 mt-1 overflow-hidden rounded-[32px] bg-[#111]">
               <div className="flex gap-1 px-3 pt-3">{[1, 0.4, 0.2].map((o, i) => <div key={i} className="h-[3px] flex-1 rounded-full bg-[#6ed807]" style={{ opacity: o }} />)}</div>
               <div className="flex items-center gap-2 px-3 py-2.5">
                 <div className="h-7 w-7 rounded-full border-[2px] border-[#6ed807] bg-[#6ed807]/20" />
@@ -156,7 +157,7 @@ export default function Hero() {
                   ))}
                 </div>
               </div>
-            </div>
+            </div> */}
             <div className="flex justify-center py-3"><div className="h-1 w-20 rounded-full bg-white/15" /></div>
           </div>
         </div>
