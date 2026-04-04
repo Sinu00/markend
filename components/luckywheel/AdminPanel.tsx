@@ -1,170 +1,313 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import type { WheelMode, WheelSegment, WheelSettings, WheelStats } from "@/lib/luckywheel/types";
+import { useEffect, useMemo, useState } from "react";
+import {
+  NON_OOPS_PRIZE_IDS,
+  computeOopsCap,
+  sumNonOopsCaps,
+  type PrizeId,
+  type WheelCampaignV2,
+  type WheelSettingsV2,
+  type WheelStatsV2,
+} from "@/lib/luckywheel/types";
 
 type Props = {
-  mode: WheelMode;
-  nextOutcome: string | null;
-  segments: WheelSegment[];
-  settings: WheelSettings;
-  stats: WheelStats;
-  locked: boolean;
-  onMode: (mode: WheelMode) => void;
-  onPick: (id: string | null) => void;
-  onUnlock: () => void;
-  onSaveSegments: (segments: WheelSegment[]) => void;
-  onSettings: (settings: WheelSettings) => void;
-  onClearStats: () => void;
+  campaign: WheelCampaignV2;
+  settings: WheelSettingsV2;
+  stats: WheelStatsV2;
+  onSaveCampaign: (next: WheelCampaignV2) => void;
+  onSettings: (settings: WheelSettingsV2) => void;
+  onResetCampaign: () => void;
   onPasswordChange: (password: string) => Promise<void>;
 };
 
 export default function AdminPanel(props: Props) {
-  const [draftSegments, setDraftSegments] = useState(props.segments);
+  const [draft, setDraft] = useState(props.campaign);
   const [password, setPassword] = useState("");
 
+  useEffect(() => {
+    setDraft(props.campaign);
+  }, [props.campaign]);
+
+  const oopsCap = useMemo(() => computeOopsCap(draft.maxSpins, draft.prizes), [draft.maxSpins, draft.prizes]);
+  const sumCaps = useMemo(() => sumNonOopsCaps(draft.prizes), [draft.prizes]);
+  const capOk = sumCaps <= draft.maxSpins;
   const winRate = useMemo(() => {
     if (!props.stats.totalSpins) return 0;
     return Math.round((props.stats.wins / props.stats.totalSpins) * 100);
   }, [props.stats]);
 
-  const totalWinChance = useMemo(
-    () => Math.round(draftSegments.filter((s) => s.isWin).reduce((sum, s) => sum + s.probability, 0)),
-    [draftSegments],
-  );
-
   const card = "mt-4 rounded-2xl border border-[#d9dccf] bg-white p-4 shadow-sm";
+
+  const updatePrizeCap = (id: Exclude<PrizeId, "oops">, cap: number) => {
+    const v = Math.max(0, Math.floor(cap));
+    setDraft((c) => {
+      const prizes = { ...c.prizes, [id]: { ...c.prizes[id], cap: v, remaining: Math.min(c.prizes[id].remaining, v) } };
+      const oops = computeOopsCap(c.maxSpins, prizes);
+      return {
+        ...c,
+        prizes: {
+          ...prizes,
+          oops: { ...prizes.oops, cap: oops, remaining: Math.min(prizes.oops.remaining, oops) },
+        },
+      };
+    });
+  };
+
+  const updateMaxSpins = (maxSpins: number) => {
+    const v = Math.max(1, Math.floor(maxSpins));
+    setDraft((c) => {
+      const prizes = { ...c.prizes };
+      const oops = computeOopsCap(v, prizes);
+      return {
+        ...c,
+        maxSpins: v,
+        prizes: { ...prizes, oops: { ...prizes.oops, cap: oops, remaining: Math.min(prizes.oops.remaining, oops) } },
+      };
+    });
+  };
+
+  const applySave = () => {
+    if (!capOk) return;
+    const oops = computeOopsCap(draft.maxSpins, draft.prizes);
+    props.onSaveCampaign({
+      ...draft,
+      lotteryMax: Math.max(draft.lotteryMin, draft.lotteryMax),
+      megaMax: Math.max(draft.megaMin, draft.megaMax),
+      prizes: {
+        ...draft.prizes,
+        oops: { ...draft.prizes.oops, cap: oops, remaining: Math.min(draft.prizes.oops.remaining, oops) },
+      },
+    });
+  };
 
   return (
     <div className="mx-auto w-full max-w-5xl p-4 text-[#181818]">
-      <h1 className="text-3xl" style={{ fontFamily: "var(--font-display)" }}>Markend Wheel — Admin Control</h1>
+      <h1 className="text-3xl" style={{ fontFamily: "var(--font-display)" }}>
+        Markend Wheel — Admin
+      </h1>
+      <p className="mt-2 text-sm text-[#666]">Inventory-based spins, mega prize via lottery range.</p>
 
       <section className={`${card} mt-6`}>
-        <h2 className="text-xl" style={{ fontFamily: "var(--font-display)" }}>Next Spin Outcome</h2>
-        <div className="mt-3 grid gap-2 md:grid-cols-3">
-          {([
-            ["admin_pick", "ADMIN PICK"],
-            ["auto_weighted", "WEIGHTED RANDOM"],
-            ["always_lose", "ALWAYS LOSE"],
-          ] as const).map(([m, label]) => (
-            <button key={m} onClick={() => props.onMode(m)} className={`rounded-xl px-4 py-3 text-sm font-semibold ${props.mode === m ? "bg-[#6ed807] text-[#181818]" : "border border-[#d9dccf] bg-[#fafbf8] text-[#666]"}`}>{label}</button>
-          ))}
+        <h2 className="text-xl" style={{ fontFamily: "var(--font-display)" }}>
+          Campaign limits
+        </h2>
+        <label className="mt-4 block text-sm font-medium">Total spins allowed</label>
+        <input
+          type="number"
+          min={1}
+          className="mt-1 w-full max-w-xs rounded-xl border border-[#d9dccf] bg-white px-3 py-2"
+          value={draft.maxSpins}
+          onChange={(e) => updateMaxSpins(Number(e.target.value))}
+        />
+        <p className="mt-2 text-sm text-[#666]">
+          Spins used: {props.stats.totalSpins} / {props.campaign.maxSpins} — Remaining:{" "}
+          {Math.max(0, props.campaign.maxSpins - props.stats.totalSpins)}
+        </p>
+      </section>
+
+      <section className={card}>
+        <h2 className="text-xl" style={{ fontFamily: "var(--font-display)" }}>
+          Mega prize (lottery roll)
+        </h2>
+        <p className="mt-2 text-sm text-[#666]">
+          Each spin draws R uniformly in [lottery min, lottery max]. If R is in [mega min, mega max] and ₹500 Mega still
+          has stock, the player wins mega. Otherwise a random prize is drawn from remaining stock (weighted by remaining
+          counts). Mega is excluded from that pool.
+        </p>
+        <div className="mt-4 grid gap-4 md:grid-cols-2">
+          <div>
+            <label className="text-sm font-medium">Lottery min</label>
+            <input
+              type="number"
+              className="mt-1 w-full rounded-xl border border-[#d9dccf] bg-white px-3 py-2"
+              value={draft.lotteryMin}
+              onChange={(e) => setDraft((c) => ({ ...c, lotteryMin: Math.floor(Number(e.target.value)) }))}
+            />
+          </div>
+          <div>
+            <label className="text-sm font-medium">Lottery max</label>
+            <input
+              type="number"
+              className="mt-1 w-full rounded-xl border border-[#d9dccf] bg-white px-3 py-2"
+              value={draft.lotteryMax}
+              onChange={(e) => setDraft((c) => ({ ...c, lotteryMax: Math.floor(Number(e.target.value)) }))}
+            />
+          </div>
+          <div>
+            <label className="text-sm font-medium">Mega if R between (min)</label>
+            <input
+              type="number"
+              className="mt-1 w-full rounded-xl border border-[#d9dccf] bg-white px-3 py-2"
+              value={draft.megaMin}
+              onChange={(e) => setDraft((c) => ({ ...c, megaMin: Math.floor(Number(e.target.value)) }))}
+            />
+          </div>
+          <div>
+            <label className="text-sm font-medium">Mega if R between (max)</label>
+            <input
+              type="number"
+              className="mt-1 w-full rounded-xl border border-[#d9dccf] bg-white px-3 py-2"
+              value={draft.megaMax}
+              onChange={(e) => setDraft((c) => ({ ...c, megaMax: Math.floor(Number(e.target.value)) }))}
+            />
+          </div>
         </div>
+        {draft.megaMin < draft.lotteryMin || draft.megaMax > draft.lotteryMax ? (
+          <p className="mt-3 text-sm text-amber-700">
+            Tip: keep mega min/max inside the lottery range so mega can actually trigger.
+          </p>
+        ) : null}
+      </section>
 
-        {props.mode === "admin_pick" && (
-          <div className="mt-4 grid gap-2 md:grid-cols-2">
-            {props.segments.map((s) => (
-              <button key={s.id} onClick={() => props.onPick(s.id)} className={`rounded-xl border p-3 text-left ${props.nextOutcome === s.id ? "border-[#6ed807] bg-[#f1f9dd]" : "border-[#d9dccf] bg-[#fafbf8]"}`}>
-                <p className="font-semibold">{s.emoji} {s.label}</p>
-                <p className="text-xs text-[#666]">{s.isWin ? "WIN" : "LOSE"}</p>
-              </button>
-            ))}
-            <button onClick={() => props.onPick(null)} className="rounded-xl border border-[#d9dccf] p-3 text-sm text-[#666]">RESET</button>
-          </div>
+      <section className={card}>
+        <h2 className="text-xl" style={{ fontFamily: "var(--font-display)" }}>
+          Prize quotas
+        </h2>
+        {!capOk && (
+          <p className="mt-2 rounded-lg bg-red-50 p-3 text-sm text-red-700">
+            Sum of prizes (except Oops) is {sumCaps}, which exceeds total spins {draft.maxSpins}. Lower caps or raise
+            total spins.
+          </p>
         )}
-
-        {props.mode === "auto_weighted" && (
-          <div className="mt-4 space-y-3">
-            {draftSegments.map((s, i) => (
-              <div key={s.id} className="grid gap-2 md:grid-cols-[1fr_220px_48px] md:items-center">
-                <p className="text-sm">{s.emoji} {s.label}</p>
-                <input type="range" min={0} max={100} value={s.probability} onChange={(e) => {
-                  const next = [...draftSegments];
-                  next[i] = { ...next[i], probability: Number(e.target.value) };
-                  setDraftSegments(next);
-                }} />
-                <p className="text-sm text-[#2f7f00]">{s.probability}%</p>
+        <div className="mt-4 space-y-3">
+          {NON_OOPS_PRIZE_IDS.map((id) => {
+            const p = draft.prizes[id];
+            return (
+              <div
+                key={id}
+                className="grid gap-2 rounded-xl border border-[#e6e8df] bg-[#fafbf8] p-3 md:grid-cols-[1fr_120px_100px]"
+              >
+                <div>
+                  <p className="font-semibold">{p.emoji} {p.label}</p>
+                  <p className="text-xs text-[#666]">Remaining: {p.remaining} / {p.cap}</p>
+                </div>
+                <label className="text-sm md:col-span-1">
+                  Cap
+                  <input
+                    type="number"
+                    min={0}
+                    className="mt-1 w-full rounded border border-[#d9dccf] bg-white px-2 py-1"
+                    value={p.cap}
+                    onChange={(e) => updatePrizeCap(id, Number(e.target.value))}
+                  />
+                </label>
               </div>
-            ))}
-            <p className="text-sm text-[#2f7f00]">Total win chance: {totalWinChance}%</p>
-            <button onClick={() => props.onSaveSegments(draftSegments)} className="rounded-full bg-[#6ed807] px-5 py-2 font-semibold text-[#181818]">SAVE WEIGHTS</button>
+            );
+          })}
+          <div className="rounded-xl border border-[#6ed807]/40 bg-[#f1f9dd] p-3">
+            <p className="font-semibold">{draft.prizes.oops.emoji} {draft.prizes.oops.label}</p>
+            <p className="text-sm text-[#666]">
+              Auto remainder: <strong>{oopsCap}</strong> (total spins − sum of other caps). Remaining in play:{" "}
+              {draft.prizes.oops.remaining}
+            </p>
           </div>
-        )}
-
-        {props.mode === "always_lose" && <p className="mt-4 rounded-xl bg-[#ffe8e8] p-3 text-sm text-red-600">⛔ ALL SPINS = LOSE</p>}
+        </div>
+        <button
+          type="button"
+          onClick={applySave}
+          disabled={!capOk}
+          className="mt-4 rounded-full bg-[#6ed807] px-6 py-2 font-semibold text-[#181818] disabled:opacity-50"
+        >
+          Save configuration
+        </button>
       </section>
 
       <section className={card}>
-        <h2 className="text-xl" style={{ fontFamily: "var(--font-display)" }}>Reset Control</h2>
-        <p className="mt-2 text-sm">{props.locked ? "🔴 Wheel is LOCKED" : "🟢 Wheel is READY"}</p>
-        <button onClick={props.onUnlock} className="mt-3 w-full rounded-xl bg-[#6ed807] py-4 text-lg font-bold text-[#181818]">UNLOCK FOR NEXT PERSON</button>
+        <h2 className="text-xl" style={{ fontFamily: "var(--font-display)" }}>
+          Reset campaign
+        </h2>
+        <p className="mt-2 text-sm text-[#666]">
+          Restores remaining counts to saved caps and clears spin history. Does not change caps or ranges above.
+        </p>
+        <button
+          type="button"
+          onClick={() => {
+            if (window.confirm("Reset all remaining prizes and clear spin history?")) props.onResetCampaign();
+          }}
+          className="mt-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-800"
+        >
+          Reset campaign
+        </button>
       </section>
 
       <section className={card}>
-        <h2 className="text-xl" style={{ fontFamily: "var(--font-display)" }}>Stats</h2>
+        <h2 className="text-xl" style={{ fontFamily: "var(--font-display)" }}>
+          Stats
+        </h2>
         <div className="mt-3 grid gap-2 md:grid-cols-4">
-          <div className="rounded-xl border border-[#e6e8df] bg-[#fafbf8] p-3">Total Spins: {props.stats.totalSpins}</div>
+          <div className="rounded-xl border border-[#e6e8df] bg-[#fafbf8] p-3">Total spins: {props.stats.totalSpins}</div>
           <div className="rounded-xl border border-[#e6e8df] bg-[#fafbf8] p-3">Wins: {props.stats.wins}</div>
           <div className="rounded-xl border border-[#e6e8df] bg-[#fafbf8] p-3">Losses: {props.stats.losses}</div>
-          <div className="rounded-xl border border-[#e6e8df] bg-[#fafbf8] p-3">Win Rate: {winRate}%</div>
+          <div className="rounded-xl border border-[#e6e8df] bg-[#fafbf8] p-3">Win rate: {winRate}%</div>
         </div>
-        <div className="mt-3 max-h-44 space-y-1 overflow-auto rounded-xl border border-[#e6e8df] bg-[#fafbf8] p-2 text-xs">
+        <div className="mt-3 max-h-52 space-y-1 overflow-auto rounded-xl border border-[#e6e8df] bg-[#fafbf8] p-2 text-xs">
           {props.stats.history.map((h) => (
-            <div key={h.id} className="flex justify-between border-b border-[#eceee6] py-1">
-              <span>{new Date(h.at).toLocaleTimeString()}</span>
+            <div key={h.id} className="flex flex-wrap justify-between gap-1 border-b border-[#eceee6] py-1">
+              <span>{new Date(h.at).toLocaleString()}</span>
+              <span>R={h.roll}</span>
               <span>{h.segmentLabel}</span>
               <span className={h.isWin ? "text-[#2f7f00]" : "text-[#888]"}>{h.isWin ? "WIN" : "LOSE"}</span>
             </div>
           ))}
         </div>
-        <button onClick={props.onClearStats} className="mt-2 text-xs text-red-500">CLEAR SESSION DATA</button>
       </section>
 
       <section className={card}>
-        <h2 className="text-xl" style={{ fontFamily: "var(--font-display)" }}>Wheel Customization</h2>
-        <div className="mt-3 space-y-3">
-          {draftSegments.map((s, i) => (
-            <div key={s.id} className="grid gap-2 rounded-xl border border-[#e6e8df] bg-[#fafbf8] p-3 md:grid-cols-4">
-              <input className="rounded border border-[#d9dccf] bg-white px-2 py-1" value={s.label} onChange={(e) => {
-                const next = [...draftSegments];
-                next[i] = { ...next[i], label: e.target.value };
-                setDraftSegments(next);
-              }} />
-              <input className="rounded border border-[#d9dccf] bg-white px-2 py-1" value={s.emoji || ""} onChange={(e) => {
-                const next = [...draftSegments];
-                next[i] = { ...next[i], emoji: e.target.value };
-                setDraftSegments(next);
-              }} />
-              <select className="rounded border border-[#d9dccf] bg-white px-2 py-1" value={s.isWin ? "win" : "lose"} onChange={(e) => {
-                const next = [...draftSegments];
-                next[i] = { ...next[i], isWin: e.target.value === "win" };
-                setDraftSegments(next);
-              }}><option value="win">Win</option><option value="lose">Lose</option></select>
-              <input className="rounded border border-[#d9dccf] bg-white px-2 py-1" value={s.color} onChange={(e) => {
-                const next = [...draftSegments];
-                next[i] = { ...next[i], color: e.target.value };
-                setDraftSegments(next);
-              }} />
-            </div>
-          ))}
-          <button onClick={() => props.onSaveSegments(draftSegments)} className="rounded-full bg-[#6ed807] px-5 py-2 font-semibold text-[#181818]">SAVE CHANGES</button>
-        </div>
-      </section>
-
-      <section className={card}>
-        <h2 className="text-xl" style={{ fontFamily: "var(--font-display)" }}>Settings</h2>
+        <h2 className="text-xl" style={{ fontFamily: "var(--font-display)" }}>
+          Settings
+        </h2>
         <div className="mt-3 grid gap-3 md:grid-cols-2">
-          <label className="text-sm">Spin Cooldown: {props.settings.spinCooldownSeconds}s
-            <input type="range" min={0} max={60} value={props.settings.spinCooldownSeconds} onChange={(e) => props.onSettings({ ...props.settings, spinCooldownSeconds: Number(e.target.value) })} />
+          <label className="text-sm">
+            Spin cooldown (seconds): {props.settings.spinCooldownSeconds}
+            <input
+              type="range"
+              min={0}
+              max={60}
+              value={props.settings.spinCooldownSeconds}
+              onChange={(e) =>
+                props.onSettings({ ...props.settings, spinCooldownSeconds: Number(e.target.value) })
+              }
+              className="mt-1 block w-full"
+            />
           </label>
-          <label className="text-sm">Show Admin Hint
-            <input type="checkbox" className="ml-2" checked={props.settings.showAdminHint} onChange={(e) => props.onSettings({ ...props.settings, showAdminHint: e.target.checked })} />
+          <label className="flex items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={props.settings.confettiEnabled}
+              onChange={(e) => props.onSettings({ ...props.settings, confettiEnabled: e.target.checked })}
+            />
+            Confetti on win
           </label>
-          <label className="text-sm">Confetti on Win
-            <input type="checkbox" className="ml-2" checked={props.settings.confettiEnabled} onChange={(e) => props.onSettings({ ...props.settings, confettiEnabled: e.target.checked })} />
-          </label>
-          <label className="text-sm">Sound Effects (optional)
-            <input type="checkbox" className="ml-2" checked={props.settings.soundEnabled} onChange={(e) => props.onSettings({ ...props.settings, soundEnabled: e.target.checked })} />
+          <label className="flex items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={props.settings.soundEnabled}
+              onChange={(e) => props.onSettings({ ...props.settings, soundEnabled: e.target.checked })}
+            />
+            Sound effects
           </label>
         </div>
 
         <div className="mt-4 flex gap-2">
-          <input type="password" placeholder="New admin password" value={password} onChange={(e) => setPassword(e.target.value)} className="flex-1 rounded border border-[#d9dccf] bg-white px-3 py-2" />
-          <button onClick={async () => {
-            if (!password) return;
-            await props.onPasswordChange(password);
-            setPassword("");
-          }} className="rounded bg-[#6ed807] px-4 py-2 font-semibold text-[#181818]">UPDATE</button>
+          <input
+            type="password"
+            placeholder="New admin password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className="flex-1 rounded border border-[#d9dccf] bg-white px-3 py-2"
+          />
+          <button
+            type="button"
+            onClick={async () => {
+              if (!password) return;
+              await props.onPasswordChange(password);
+              setPassword("");
+            }}
+            className="rounded bg-[#6ed807] px-4 py-2 font-semibold text-[#181818]"
+          >
+            Update password
+          </button>
         </div>
       </section>
     </div>

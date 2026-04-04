@@ -2,42 +2,52 @@
 
 import dynamic from "next/dynamic";
 import Image from "next/image";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import useSound from "use-sound";
 import SpinWheel from "@/components/luckywheel/SpinWheel";
 import SpinButton from "@/components/luckywheel/SpinButton";
 import ResultModal from "@/components/luckywheel/ResultModal";
-import { calculateTargetRotation, segmentIndexById, selectTargetSegment } from "@/lib/luckywheel/engine";
+import { calculateTargetRotation, pickPrizeOutcome, segmentIndexById } from "@/lib/luckywheel/engine";
 import {
-  addHistory,
+  applySpinResult,
   ensureDefaultPasswordHash,
-  getMode,
-  getNextOutcome,
-  getSegments,
-  getSettings,
-  setNextOutcome,
+  getCampaign,
+  getSettingsV2,
+  getWheelStatsV2,
   verifyPassword,
 } from "@/lib/luckywheel/storage";
-import type { WheelSegment } from "@/lib/luckywheel/types";
+import {
+  campaignToSegments,
+  createDefaultCampaign,
+  type SpinWheelResult,
+  type WheelCampaignV2,
+  type WheelStatsV2,
+} from "@/lib/luckywheel/types";
 
 const ParticleBackground = dynamic(() => import("@/components/ui/ParticleBackground"), { ssr: false });
 
 export default function LuckyWheelPage() {
   const router = useRouter();
 
-  const [segments] = useState<WheelSegment[]>(() => (typeof window === "undefined" ? [] : getSegments()));
-  const [mode] = useState(() => (typeof window === "undefined" ? "admin_pick" : getMode()));
-  const [nextOutcome, setNextOutcomeState] = useState<string | null>(() => (typeof window === "undefined" ? null : getNextOutcome()));
-  const [settings] = useState(() => (typeof window === "undefined" ? { spinCooldownSeconds: 0, showAdminHint: false, confettiEnabled: true, soundEnabled: false } : getSettings()));
+  const [campaign, setCampaign] = useState<WheelCampaignV2>(() => createDefaultCampaign(300));
+  const [stats, setStats] = useState<WheelStatsV2>(() => ({
+    totalSpins: 0,
+    wins: 0,
+    losses: 0,
+    history: [],
+  }));
+  const [settings, setSettings] = useState(() => getSettingsV2());
+
   const [rotation, setRotation] = useState(0);
   const [spinning, setSpinning] = useState(false);
   const [spun, setSpun] = useState(false);
-  const [result, setResult] = useState<WheelSegment | null>(null);
+  const [result, setResult] = useState<SpinWheelResult | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [claimExpiresAt, setClaimExpiresAt] = useState<number | null>(null);
   const [hubTapCount, setHubTapCount] = useState(0);
   const [soundReady, setSoundReady] = useState(false);
+  const [cooldownUntil, setCooldownUntil] = useState(0);
 
   const [playTick, { stop: stopTick }] = useSound("/sounds/tick.wav", { volume: 0.25, interrupt: true });
   const [playWin] = useSound("/sounds/win.wav", { volume: 0.8 });
@@ -46,9 +56,30 @@ export default function LuckyWheelPage() {
 
   const lastTickRef = useRef<number>(-1);
 
+  const refreshFromStorage = useCallback(() => {
+    setCampaign(getCampaign());
+    setStats(getWheelStatsV2());
+    setSettings(getSettingsV2());
+  }, []);
+
   useEffect(() => {
     void ensureDefaultPasswordHash();
-  }, []);
+    refreshFromStorage();
+  }, [refreshFromStorage]);
+
+  useEffect(() => {
+    const onStorage = (e: StorageEvent) => {
+      if (
+        e.key === "markend_wheel_v2_campaign" ||
+        e.key === "markend_wheel_v2_stats" ||
+        e.key === "markend_wheel_v2_settings"
+      ) {
+        refreshFromStorage();
+      }
+    };
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
+  }, [refreshFromStorage]);
 
   useEffect(() => {
     let active = true;
@@ -72,7 +103,9 @@ export default function LuckyWheelPage() {
     const requestWake = async () => {
       try {
         if ("wakeLock" in navigator) wakeLock = await navigator.wakeLock.request("screen");
-      } catch {}
+      } catch {
+        /* ignore */
+      }
     };
     void requestWake();
     return () => {
@@ -80,37 +113,69 @@ export default function LuckyWheelPage() {
     };
   }, []);
 
-  const canSpin = useMemo(() => !spinning && !spun, [spinning, spun]);
+  const segments = useMemo(() => campaignToSegments(campaign), [campaign]);
+
+  const stockLeft = useMemo(
+    () => Object.values(campaign.prizes).reduce((s, p) => s + p.remaining, 0),
+    [campaign.prizes],
+  );
+
+  const spinsLeft = Math.max(0, campaign.maxSpins - stats.totalSpins);
+
+  const canSpin = useMemo(() => {
+    if (spinning || spun) return false;
+    if (stats.totalSpins >= campaign.maxSpins) return false;
+    if (stockLeft <= 0) return false;
+    if (Date.now() < cooldownUntil) return false;
+    return true;
+  }, [spinning, spun, stats.totalSpins, campaign.maxSpins, stockLeft, cooldownUntil]);
+
+  useEffect(() => {
+    if (!cooldownUntil || Date.now() >= cooldownUntil) return;
+    const ms = cooldownUntil - Date.now() + 50;
+    const t = window.setTimeout(() => setCooldownUntil(0), ms);
+    return () => window.clearTimeout(t);
+  }, [cooldownUntil]);
 
   const safePlay = (fn?: () => void) => {
     if (!settings.soundEnabled || !soundReady) return;
     try {
       fn?.();
-    } catch {}
+    } catch {
+      /* ignore */
+    }
   };
 
   const safeStop = (fn?: () => void) => {
     if (!settings.soundEnabled || !soundReady) return;
     try {
       fn?.();
-    } catch {}
+    } catch {
+      /* ignore */
+    }
   };
 
   const runSpin = () => {
     if (!canSpin || !segments.length) return;
-    const target = selectTargetSegment({ mode, nextOutcome, segments });
-    const targetIndex = segmentIndexById(segments, target.id);
-    const targetRotation = calculateTargetRotation(targetIndex, segments.length, rotation);
+    const liveCampaign = getCampaign();
+    const liveStats = getWheelStatsV2();
+    const picked = pickPrizeOutcome(liveCampaign, liveStats.totalSpins);
+    if (!picked) return;
+
+    const prize = liveCampaign.prizes[picked.prizeId];
+    const liveSegments = campaignToSegments(liveCampaign);
+    const targetIndex = segmentIndexById(liveSegments, picked.prizeId);
+    const targetRotation = calculateTargetRotation(targetIndex, liveSegments.length, rotation);
 
     setSpinning(true);
     safePlay(playSpin);
-    lastTickRef.current = Math.floor(rotation / (360 / segments.length));
+    lastTickRef.current = Math.floor(rotation / (360 / liveSegments.length));
 
     const duration = 4000 + Math.random() * 2000;
     const start = performance.now();
     const initial = rotation;
     const easeOut = (t: number) => 1 - Math.pow(1 - t, 4);
-    const segmentStep = 360 / segments.length;
+    const segmentStep = 360 / liveSegments.length;
 
     const frame = (now: number) => {
       const elapsed = now - start;
@@ -126,21 +191,32 @@ export default function LuckyWheelPage() {
 
       if (p < 1) requestAnimationFrame(frame);
       else {
-        // Ensure long/looping SFX don't continue after spin has ended.
         safeStop(stopSpin);
         safeStop(stopTick);
         setSpinning(false);
         setSpun(true);
-        if (mode === "admin_pick") {
-          setNextOutcome(null);
-          setNextOutcomeState(null);
-        }
-        addHistory({ segmentId: target.id, segmentLabel: target.label, isWin: target.isWin });
-        safePlay(target.isWin ? playWin : playLose);
-        setResult(target);
+
+        applySpinResult({
+          prizeId: picked.prizeId,
+          roll: picked.roll,
+          segmentLabel: prize.label,
+          isWin: prize.isWin,
+        });
+        refreshFromStorage();
+
+        const cd = settings.spinCooldownSeconds * 1000;
+        if (cd > 0) setCooldownUntil(Date.now() + cd);
+        else setCooldownUntil(0);
+
+        safePlay(prize.isWin ? playWin : playLose);
+        setResult({
+          label: prize.label,
+          isWin: prize.isWin,
+          emoji: prize.emoji,
+        });
         setTimeout(() => {
           setModalOpen(true);
-          if (target.isWin) setClaimExpiresAt(Date.now() + 30000);
+          if (prize.isWin) setClaimExpiresAt(Date.now() + 30000);
         }, 500);
       }
     };
@@ -176,20 +252,31 @@ export default function LuckyWheelPage() {
       try {
         stopSpin?.();
         stopTick?.();
-      } catch {}
+      } catch {
+        /* ignore */
+      }
     };
   }, [settings.soundEnabled, soundReady, stopSpin, stopTick]);
 
   return (
     <main className="relative min-h-screen overflow-hidden bg-[#f6f7f4] px-4 py-6 text-[#181818]">
       <ParticleBackground />
-      <div className="pointer-events-none absolute inset-0 opacity-[0.08]" style={{ backgroundImage: "linear-gradient(#181818 1px,transparent 1px),linear-gradient(90deg,#181818 1px,transparent 1px)", backgroundSize: "42px 42px" }} />
+      <div
+        className="pointer-events-none absolute inset-0 opacity-[0.08]"
+        style={{
+          backgroundImage:
+            "linear-gradient(#181818 1px,transparent 1px),linear-gradient(90deg,#181818 1px,transparent 1px)",
+          backgroundSize: "42px 42px",
+        }}
+      />
 
       <div className="relative z-10 mx-auto flex min-h-screen max-w-4xl flex-col items-center justify-between">
         <div className="mt-4 text-center">
           <Image src="/markend-logo-light.png" alt="Markend" width={220} height={70} className="mx-auto h-auto w-44 md:w-56" />
-          <h1 className="mt-2 text-4xl text-[#181818]" style={{ fontFamily: "var(--font-display)" }}>Spin & Win!</h1>
-          <p className="mt-2 text-sm text-[#666]">One spin per person. Good luck! 🍀</p>
+          <h1 className="mt-2 text-4xl text-[#181818]" style={{ fontFamily: "var(--font-display)" }}>
+            Spin &amp; win!
+          </h1>
+          <p className="mt-2 text-sm text-[#666]">One spin per turn. Good luck!</p>
         </div>
 
         <div className="my-6">
@@ -198,17 +285,18 @@ export default function LuckyWheelPage() {
             rotation={rotation}
             spinning={spinning}
             lightMode
-            showAdminHint={settings.showAdminHint}
-            adminTargetId={nextOutcome}
             onHubTapSecret={onHubSecret}
           />
         </div>
 
         <div className="mb-6 flex flex-col items-center gap-4">
-          <p className="text-xs text-[#555]">Spin 1 of 1 — Make it count!</p>
+          <p className="text-xs text-[#555]">
+            Campaign spins left: {spinsLeft} / {campaign.maxSpins} — Prizes in pool: {stockLeft}
+          </p>
           <SpinButton disabled={!canSpin} spun={spun} spinning={spinning} onClick={runSpin} />
           <p className="text-[11px] text-[#888]">
-            Sound {settings.soundEnabled ? (soundReady ? "enabled" : "enabled (files missing)") : "disabled"} in Admin Settings
+            Sound{" "}
+            {settings.soundEnabled ? (soundReady ? "enabled" : "enabled (files missing)") : "disabled"} in admin settings
           </p>
         </div>
       </div>

@@ -1,46 +1,46 @@
-import type { WheelMode, WheelSegment } from "@/lib/luckywheel/types";
+import type { PrizeId, WheelCampaignV2, WheelSegment } from "@/lib/luckywheel/types";
 
-export function normalizeProbabilities(segments: WheelSegment[]): WheelSegment[] {
-  const total = segments.reduce((sum, s) => sum + Math.max(0, s.probability), 0) || 1;
-  return segments.map((s) => ({
-    ...s,
-    probability: Number(((Math.max(0, s.probability) / total) * 100).toFixed(2)),
-  }));
+function randomIntInclusive(min: number, max: number): number {
+  const lo = Math.min(min, max);
+  const hi = Math.max(min, max);
+  return Math.floor(Math.random() * (hi - lo + 1)) + lo;
 }
 
-export function pickWeightedSegment(segments: WheelSegment[]): WheelSegment {
-  const normalized = normalizeProbabilities(segments);
-  const r = Math.random() * 100;
-  let acc = 0;
-  for (const segment of normalized) {
-    acc += segment.probability;
-    if (r <= acc) return segment;
-  }
-  return normalized[normalized.length - 1];
-}
+/**
+ * Picks the next prize: if roll falls in [megaMin, megaMax] and mega has stock → mega.
+ * Otherwise uniform draw weighted by remaining count among all prizes except mega.
+ */
+export function pickPrizeOutcome(
+  campaign: WheelCampaignV2,
+  totalSpins: number,
+): { prizeId: PrizeId; roll: number } | null {
+  if (totalSpins >= campaign.maxSpins) return null;
+  const ids = Object.keys(campaign.prizes) as PrizeId[];
+  const anyLeft = ids.some((id) => campaign.prizes[id].remaining > 0);
+  if (!anyLeft) return null;
 
-export function pickLoseSegment(segments: WheelSegment[]): WheelSegment {
-  const loseSegments = segments.filter((s) => !s.isWin);
-  if (!loseSegments.length) return segments[0];
-  return loseSegments[Math.floor(Math.random() * loseSegments.length)];
-}
+  const { lotteryMin, lotteryMax, megaMin, megaMax } = campaign;
+  const roll = randomIntInclusive(lotteryMin, lotteryMax);
+  const mega = campaign.prizes.mega500;
 
-export function selectTargetSegment(params: {
-  mode: WheelMode;
-  nextOutcome: string | null;
-  segments: WheelSegment[];
-}): WheelSegment {
-  const { mode, nextOutcome, segments } = params;
-
-  if (mode === "admin_pick" && nextOutcome) {
-    return segments.find((s) => s.id === nextOutcome) ?? segments[0];
+  if (mega.remaining > 0 && roll >= megaMin && roll <= megaMax) {
+    return { prizeId: "mega500", roll };
   }
 
-  if (mode === "always_lose") {
-    return pickLoseSegment(segments);
+  const pool: PrizeId[] = [];
+  for (const id of ids) {
+    if (id === "mega500") continue;
+    const n = campaign.prizes[id].remaining;
+    for (let i = 0; i < n; i++) pool.push(id);
   }
 
-  return pickWeightedSegment(segments);
+  if (pool.length === 0) {
+    if (mega.remaining > 0) return { prizeId: "mega500", roll };
+    return null;
+  }
+
+  const pick = pool[Math.floor(Math.random() * pool.length)]!;
+  return { prizeId: pick, roll };
 }
 
 export function calculateTargetRotation(
@@ -52,13 +52,21 @@ export function calculateTargetRotation(
   const targetCenter = targetSegmentIndex * segmentAngle + segmentAngle / 2;
   const pointerPosition = 270;
 
-  let targetAngle = pointerPosition - targetCenter;
-  while (targetAngle < 0) targetAngle += 360;
+  // Canvas: segment k center sits at (rotation + targetCenter) mod 360 when using the same
+  // convention as segmentAtRotation (pointer at top = 270°). Must solve for final R:
+  // (R + targetCenter) % 360 === pointerPosition  =>  R % 360 === (pointer - targetCenter) % 360.
+  // Previous code added (pointer - targetCenter) as if currentRotation % 360 were always 0,
+  // so after the first spin the wheel visually landed on the wrong slice while the prize
+  // logic stayed correct.
+  const goalMod = ((pointerPosition - targetCenter) % 360 + 360) % 360;
+  const currentMod = ((currentRotation % 360) + 360) % 360;
+  const deltaMod = (goalMod - currentMod + 360) % 360;
 
   const fullSpins = (5 + Math.floor(Math.random() * 3)) * 360;
-  const jitter = (Math.random() - 0.5) * segmentAngle * 0.6;
+  const maxJitter = segmentAngle * 0.12;
+  const jitter = (Math.random() - 0.5) * 2 * maxJitter;
 
-  return currentRotation + fullSpins + targetAngle + jitter;
+  return currentRotation + fullSpins + deltaMod + jitter;
 }
 
 export function segmentIndexById(segments: WheelSegment[], id: string): number {

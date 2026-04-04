@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import type { WheelSegment } from "@/lib/luckywheel/types";
 
@@ -9,13 +9,18 @@ type Props = {
   rotation: number;
   spinning: boolean;
   lightMode?: boolean;
-  showAdminHint?: boolean;
-  adminTargetId?: string | null;
   onHubTapSecret?: () => void;
   onPointerBounceDone?: () => void;
 };
 
-export default function SpinWheel({ segments, rotation, spinning, lightMode, showAdminHint, adminTargetId, onHubTapSecret, onPointerBounceDone }: Props) {
+export default function SpinWheel({
+  segments,
+  rotation,
+  spinning,
+  lightMode,
+  onHubTapSecret,
+  onPointerBounceDone,
+}: Props) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [size, setSize] = useState(480);
 
@@ -25,8 +30,6 @@ export default function SpinWheel({ segments, rotation, spinning, lightMode, sho
     window.addEventListener("resize", onResize);
     return () => window.removeEventListener("resize", onResize);
   }, []);
-
-  const adminTargetIndex = useMemo(() => segments.findIndex((s) => s.id === adminTargetId), [segments, adminTargetId]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -73,16 +76,6 @@ export default function SpinWheel({ segments, rotation, spinning, lightMode, sho
       ctx.font = "bold 13px Montserrat";
       ctx.fillText(`${seg.emoji ?? ""} ${seg.label}`, radius - 16, 5);
       ctx.restore();
-
-      if (showAdminHint && i === adminTargetIndex) {
-        const markerAngle = textAngle;
-        const x = cx + Math.cos(markerAngle) * (radius - 8);
-        const y = cy + Math.sin(markerAngle) * (radius - 8);
-        ctx.beginPath();
-        ctx.arc(x, y, 4, 0, 2 * Math.PI);
-        ctx.fillStyle = "#6ed807";
-        ctx.fill();
-      }
     });
 
     ctx.beginPath();
@@ -100,7 +93,7 @@ export default function SpinWheel({ segments, rotation, spinning, lightMode, sho
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     ctx.fillText("M", cx, cy);
-  }, [segments, rotation, size, lightMode, showAdminHint, adminTargetIndex]);
+  }, [segments, rotation, size, lightMode]);
 
   return (
     <div className="relative grid place-items-center">
@@ -111,7 +104,12 @@ export default function SpinWheel({ segments, rotation, spinning, lightMode, sho
         <canvas ref={canvasRef} className="rounded-full" />
       </motion.div>
 
-      <button onClick={onHubTapSecret} aria-label="Hidden admin trigger" className="absolute grid h-16 w-16 place-items-center rounded-full" />
+      <button
+        type="button"
+        onClick={onHubTapSecret}
+        aria-label="Hidden admin trigger"
+        className="absolute grid h-16 w-16 place-items-center rounded-full"
+      />
 
       <motion.div
         className="absolute -top-4 left-1/2 h-0 w-0 -translate-x-1/2 border-x-[14px] border-t-[26px] border-x-transparent border-t-[#6ed807] [filter:drop-shadow(0_0_8px_#6ed807)]"
